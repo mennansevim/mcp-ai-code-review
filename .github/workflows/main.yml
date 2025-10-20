@@ -1,0 +1,41 @@
+name: AI Code Review (Claude via MCP)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore & build tools
+        run: |
+          dotnet restore ./src/ReviewSchemas/ReviewSchemas.csproj
+          dotnet restore ./src/ReviewMcpServer/ReviewMcpServer.csproj
+          dotnet restore ./src/ReviewClient/ReviewClient.csproj
+          dotnet build -c Release ./src/ReviewSchemas/ReviewSchemas.csproj
+          dotnet build -c Release ./src/ReviewMcpServer/ReviewMcpServer.csproj
+          dotnet build -c Release ./src/ReviewClient/ReviewClient.csproj
+
+      - name: Run AI review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REVIEW_MAX_PATCH_BYTES: 350000
+          REVIEW_INCLUDE_PATTERNS: "**/*.cs,**/*.ts,**/*.js,**/*.py,**/*.java,**/*.go,**/*.rb,**/*.rs,**/*.cpp,**/*.h,**/*.csproj,**/*.sln,**/*.yml,**/*.yaml"
+        run: |
+          bash scripts/run-review.sh
