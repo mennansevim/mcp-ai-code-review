@@ -6,7 +6,7 @@ namespace SampleApp
     {
         public static void Main()
         {
-            Console.WriteLine("Hello, world! Miray");
+            Console.WriteLine("Hello, world! Miray Sevim");
         }
     }
 }
