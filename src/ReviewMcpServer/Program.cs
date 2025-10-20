@@ -15,14 +15,34 @@ sealed class ReviewServer
         using var writer = new StreamWriter(stdout) { AutoFlush = true };
 
         string? line;
+        var oneShot = Environment.GetEnvironmentVariable("REVIEW_SERVER_ONE_SHOT") == "1";
         while ((line = await reader.ReadLineAsync()) is not null)
         {
-            var req = JsonSerializer.Deserialize<Request>(line);
-            if (req?.Method == "review_diff")
+            try
             {
-                var result = await ReviewAsync(req.Params!.Patch);
-                var json = JsonSerializer.Serialize(result);
-                await writer.WriteLineAsync(json);
+                var req = JsonSerializer.Deserialize<Request>(line, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (req?.Method == "review_diff")
+                {
+                    var result = await ReviewAsync(req.Params!.Patch);
+                    var json = JsonSerializer.Serialize(result);
+                    await writer.WriteLineAsync(json);
+                    if (oneShot)
+                    {
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                var error = new ReviewResponse(
+                    Summary: $"Review failed: {ex.Message}",
+                    Findings: new()
+                );
+                await writer.WriteLineAsync(JsonSerializer.Serialize(error));
+                if (oneShot)
+                {
+                    break;
+                }
             }
         }
     }
@@ -31,8 +51,28 @@ sealed class ReviewServer
     {
         var prompt = PromptLibrary.BuildForPatch(patch);
         var text = await Claude.CallAsync(prompt);
+        
+        // Claude bazen JSON'u markdown code block içinde dönebilir, temizle
+        text = text.Trim();
+        if (text.StartsWith("```json"))
+        {
+            text = text[7..];
+            if (text.EndsWith("```"))
+                text = text[..^3];
+            text = text.Trim();
+        }
+        else if (text.StartsWith("```"))
+        {
+            var firstNewline = text.IndexOf('\n');
+            if (firstNewline > 0)
+                text = text[(firstNewline + 1)..];
+            if (text.EndsWith("```"))
+                text = text[..^3];
+            text = text.Trim();
+        }
+        
         return JsonSerializer.Deserialize<ReviewResponse>(text) ?? new ReviewResponse(
-            Summary: "Model returned no JSON. Check logs.",
+            Summary: "Model returned no valid JSON. Check logs.",
             Findings: new()
         );
     }
@@ -75,24 +115,36 @@ static class Claude
         using var http = new HttpClient();
         http.DefaultRequestHeaders.Add("x-api-key", apiKey);
         http.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+        http.DefaultRequestHeaders.Add("Accept", "application/json");
 
         var payload = new
         {
-            model = "claude-3-7-sonnet",
-            max_tokens = 2000,
+            model = "claude-3-5-sonnet-20241022",
+            max_tokens = 4096,
             temperature = 0,
-            messages = new object[] { new { role = "user", content = prompt } }
+            messages = new object[]
+            {
+                new
+                {
+                    role = "user",
+                    content = new object[] { new { type = "text", text = prompt } }
+                }
+            }
         };
 
         var res = await http.PostAsync(
             "https://api.anthropic.com/v1/messages",
             new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json")
         );
-        res.EnsureSuccessStatusCode();
+        if (!res.IsSuccessStatusCode)
+        {
+            var err = await res.Content.ReadAsStringAsync();
+            throw new InvalidOperationException($"Anthropic API error ({(int)res.StatusCode}): {err}");
+        }
 
         using var stream = await res.Content.ReadAsStreamAsync();
         using var doc = await JsonDocument.ParseAsync(stream);
         var content = doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString();
-        return content ?? "{"summary":"No content","findings":[]}";
+        return content ?? "{\"summary\":\"No content\",\"findings\":[]}";
     }
 }
