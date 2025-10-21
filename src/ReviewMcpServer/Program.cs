@@ -52,29 +52,54 @@ sealed class ReviewServer
         var prompt = PromptLibrary.BuildForPatch(patch);
         var text = await AiClient.CallAsync(prompt);
         
-        // Claude bazen JSON'u markdown code block içinde dönebilir, temizle
+        // Log raw response for debugging
+        Console.Error.WriteLine($"Raw AI response (first 500 chars): {text.Substring(0, Math.Min(500, text.Length))}");
+        
+        // AI might return JSON in markdown code blocks, clean it up
         text = text.Trim();
+        
+        // Remove ```json or ``` prefix
         if (text.StartsWith("```json"))
         {
             text = text[7..];
-            if (text.EndsWith("```"))
-                text = text[..^3];
-            text = text.Trim();
         }
         else if (text.StartsWith("```"))
         {
             var firstNewline = text.IndexOf('\n');
             if (firstNewline > 0)
                 text = text[(firstNewline + 1)..];
-            if (text.EndsWith("```"))
-                text = text[..^3];
-            text = text.Trim();
         }
         
-        return JsonSerializer.Deserialize<ReviewResponse>(text) ?? new ReviewResponse(
-            Summary: "Model returned no valid JSON. Check logs.",
-            Findings: new()
-        );
+        // Remove ``` suffix
+        if (text.EndsWith("```"))
+        {
+            text = text[..^3];
+        }
+        
+        text = text.Trim();
+        
+        // Log cleaned JSON for debugging
+        Console.Error.WriteLine($"Cleaned JSON (first 500 chars): {text.Substring(0, Math.Min(500, text.Length))}");
+        
+        try
+        {
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                AllowTrailingCommas = true
+            };
+            
+            return JsonSerializer.Deserialize<ReviewResponse>(text, options) ?? new ReviewResponse(
+                Summary: "Model returned no valid JSON. Check logs.",
+                Findings: new()
+            );
+        }
+        catch (JsonException ex)
+        {
+            Console.Error.WriteLine($"JSON Parse Error: {ex.Message}");
+            Console.Error.WriteLine($"Problematic JSON: {text}");
+            throw new InvalidOperationException($"Failed to parse AI response: {ex.Message}", ex);
+        }
     }
 
     private sealed record Request(string Method, Params? Params);
@@ -103,7 +128,7 @@ static class PromptLibrary
       ]
     }
     
-    EXAMPLE OUTPUT:
+    EXAMPLE VALID OUTPUT (copy this format exactly):
     {
       "summary": "Found 2 security issues and 1 code smell.",
       "findings": [
@@ -114,6 +139,14 @@ static class PromptLibrary
           "title": "SQL Injection vulnerability",
           "explanation": "String concatenation in SQL query allows injection attacks.",
           "suggested_fix": "Use parameterized queries or ORM."
+        },
+        {
+          "file": "Program.cs",
+          "line": 32,
+          "severity": "Medium",
+          "title": "Magic number",
+          "explanation": "Hardcoded value reduces maintainability.",
+          "suggested_fix": "Extract to named constant."
         }
       ]
     }
