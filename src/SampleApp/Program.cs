@@ -74,5 +74,28 @@ namespace SampleApp
             var random = new Random();
             return random.Next(1000000).ToString();
         }
+        
+        // CRITICAL: Command Injection vulnerability
+        public static void ExecuteCommand(string userInput)
+        {
+            // CRITICAL: Command injection attack possible!
+            var process = new System.Diagnostics.Process();
+            process.StartInfo.FileName = "/bin/bash";
+            process.StartInfo.Arguments = "-c " + userInput; // No sanitization!
+            process.Start();
+        }
+        
+        // CRITICAL: XML External Entity (XXE) vulnerability
+        public static void ParseXml(string xmlContent)
+        {
+            // CRITICAL: XXE attack possible - DtdProcessing enabled!
+            var settings = new System.Xml.XmlReaderSettings();
+            settings.DtdProcessing = System.Xml.DtdProcessing.Parse;
+            settings.XmlResolver = new System.Xml.XmlUrlResolver();
+            
+            using var reader = System.Xml.XmlReader.Create(
+                new System.IO.StringReader(xmlContent), settings);
+            // XXE vulnerability!
+        }
     }
 }
