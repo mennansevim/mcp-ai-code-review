@@ -27,5 +27,15 @@ namespace SampleApp
             // Potential issue: No null check, magic numbers
             return discount;
         }
+        
+        // Additional problematic code for testing
+        public static string GetUserPassword(string username)
+        {
+            // Security issue: Hardcoded password
+            if (username == "admin")
+                return "admin123"; // CRITICAL: Never hardcode passwords!
+            
+            return "default";
+        }
     }
 }
