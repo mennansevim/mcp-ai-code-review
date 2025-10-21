@@ -57,5 +57,22 @@ namespace SampleApp
             
             return "default";
         }
+        
+        // Path Traversal vulnerability
+        public static string ReadUserFile(string fileName)
+        {
+            // CRITICAL: Path traversal attack possible!
+            string filePath = "/var/data/users/" + fileName;
+            // No validation - attacker could use ../../etc/passwd
+            return System.IO.File.ReadAllText(filePath);
+        }
+        
+        // Insecure random for security
+        public static string GenerateToken()
+        {
+            // HIGH: Using non-cryptographic random for security token!
+            var random = new Random();
+            return random.Next(1000000).ToString();
+        }
     }
 }
