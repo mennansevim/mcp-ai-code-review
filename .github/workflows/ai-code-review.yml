@@ -33,9 +33,9 @@ jobs:
 
       - name: Run AI review
         env:
-          AI_PROVIDER: "openai"
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL: "gpt-4o-mini"
+          AI_PROVIDER: "groq"
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: "llama-3.3-70b-versatile"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REVIEW_MAX_PATCH_BYTES: 350000
           REVIEW_INCLUDE_PATTERNS: "**/*.cs,**/*.ts,**/*.js,**/*.py,**/*.java,**/*.go,**/*.rb,**/*.rs,**/*.cpp,**/*.h,**/*.csproj,**/*.sln,**/*.yml,**/*.yaml"

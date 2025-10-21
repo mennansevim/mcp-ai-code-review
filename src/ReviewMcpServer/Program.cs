@@ -114,12 +114,13 @@ static class AiClient
 {
     public static async Task<string> CallAsync(string prompt)
     {
-        var provider = Environment.GetEnvironmentVariable("AI_PROVIDER") ?? "openai";
+        var provider = Environment.GetEnvironmentVariable("AI_PROVIDER") ?? "groq";
         
         return provider.ToLower() switch
         {
             "openai" => await CallOpenAiAsync(prompt),
             "anthropic" => await CallAnthropicAsync(prompt),
+            "groq" => await CallGroqAsync(prompt),
             _ => throw new InvalidOperationException($"Unsupported AI provider: {provider}")
         };
     }
@@ -158,6 +159,48 @@ static class AiClient
             var err = await res.Content.ReadAsStringAsync();
             Console.Error.WriteLine($"OpenAI API Error: {err}");
             throw new InvalidOperationException($"OpenAI API error ({(int)res.StatusCode}): {err}");
+        }
+
+        using var stream = await res.Content.ReadAsStreamAsync();
+        using var doc = await JsonDocument.ParseAsync(stream);
+        var content = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+        return content ?? "{\"summary\":\"No content\",\"findings\":[]}";
+    }
+
+    private static async Task<string> CallGroqAsync(string prompt)
+    {
+        var apiKey = Environment.GetEnvironmentVariable("GROQ_API_KEY")
+            ?? throw new InvalidOperationException("GROQ_API_KEY not set");
+
+        using var http = new HttpClient();
+        http.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+        http.DefaultRequestHeaders.Add("Accept", "application/json");
+
+        var model = Environment.GetEnvironmentVariable("GROQ_MODEL") ?? "llama-3.3-70b-versatile";
+        
+        var payload = new
+        {
+            model = model,
+            temperature = 0,
+            messages = new object[]
+            {
+                new { role = "system", content = "You are a senior staff engineer performing strict code reviews. Return only valid JSON." },
+                new { role = "user", content = prompt }
+            }
+        };
+        
+        Console.Error.WriteLine($"Using Groq model: {model}, prompt size: {prompt.Length} chars");
+
+        var res = await http.PostAsync(
+            "https://api.groq.com/openai/v1/chat/completions",
+            new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json")
+        );
+        
+        if (!res.IsSuccessStatusCode)
+        {
+            var err = await res.Content.ReadAsStringAsync();
+            Console.Error.WriteLine($"Groq API Error: {err}");
+            throw new InvalidOperationException($"Groq API error ({(int)res.StatusCode}): {err}");
         }
 
         using var stream = await res.Content.ReadAsStreamAsync();
