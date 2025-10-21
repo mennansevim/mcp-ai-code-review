@@ -85,28 +85,55 @@ static class PromptLibrary
 {
     public static string BuildForPatch(string patch) => $$"""
     You are a senior staff engineer performing a strict code review.
-    Return ONLY JSON matching this C# schema (use keys exactly):
+    
+    CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, just raw JSON.
+    
+    JSON Schema (use exact field names and types):
     {
-      "summary": string,
+      "summary": "string - brief review summary",
       "findings": [
-        { "file": string, "line": number, "severity": "Info" | "Low" | "Medium" | "High",
-          "title": string, "explanation": string, "suggested_fix": string }
+        {
+          "file": "string - filename from diff",
+          "line": number - integer line number,
+          "severity": "Info" | "Low" | "Medium" | "High",
+          "title": "string - short issue title",
+          "explanation": "string - detailed explanation",
+          "suggested_fix": "string - how to fix it"
+        }
       ]
     }
+    
+    EXAMPLE OUTPUT:
+    {
+      "summary": "Found 2 security issues and 1 code smell.",
+      "findings": [
+        {
+          "file": "Program.cs",
+          "line": 25,
+          "severity": "High",
+          "title": "SQL Injection vulnerability",
+          "explanation": "String concatenation in SQL query allows injection attacks.",
+          "suggested_fix": "Use parameterized queries or ORM."
+        }
+      ]
+    }
+    
     Guidelines:
-    - Severity levels (use exact case): "Info", "Low", "Medium", "High"
-    - Focus on correctness, security, performance, resource leaks, concurrency, API breaking, style-invariants.
+    - Severity must be EXACTLY: "Info", "Low", "Medium", or "High" (case-sensitive)
+    - Focus on: security, correctness, performance, resource leaks, concurrency
     - Use "High" for security issues, data loss, breaking changes
     - Use "Medium" for performance issues, code smells
     - Use "Low" for style issues, minor improvements
     - Use "Info" for suggestions
-    - If line cannot be determined, set line=1 and explain.
-    - Keep suggestions minimal and actionable.
-
+    - If line cannot be determined, use line=1
+    - Return empty findings array if no issues found
+    
     Input is a unified git diff between BASE and HEAD:
     ---BEGIN DIFF---
     {{patch}}
     ---END DIFF---
+    
+    Return ONLY the JSON object, nothing else:
     """;
 }
 
