@@ -1,4 +1,4 @@
-name: AI Code Review (Claude via MCP)
+name: AI Code Review (OpenAI/Anthropic via MCP)
 
 on:
   pull_request:
@@ -33,9 +33,10 @@ jobs:
 
       - name: Run AI review
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AI_PROVIDER: "openai"
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: "gpt-4-turbo-preview"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ANTHROPIC_MODEL: "claude-3-5-sonnet-20240620"
           REVIEW_MAX_PATCH_BYTES: 350000
           REVIEW_INCLUDE_PATTERNS: "**/*.cs,**/*.ts,**/*.js,**/*.py,**/*.java,**/*.go,**/*.rb,**/*.rs,**/*.cpp,**/*.h,**/*.csproj,**/*.sln,**/*.yml,**/*.yaml"
         run: |

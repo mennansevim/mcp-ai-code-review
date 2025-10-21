@@ -50,7 +50,7 @@ sealed class ReviewServer
     private async Task<ReviewResponse> ReviewAsync(string patch)
     {
         var prompt = PromptLibrary.BuildForPatch(patch);
-        var text = await Claude.CallAsync(prompt);
+        var text = await AiClient.CallAsync(prompt);
         
         // Claude bazen JSON'u markdown code block içinde dönebilir, temizle
         text = text.Trim();
@@ -105,9 +105,63 @@ static class PromptLibrary
     """;
 }
 
-static class Claude
+static class AiClient
 {
     public static async Task<string> CallAsync(string prompt)
+    {
+        var provider = Environment.GetEnvironmentVariable("AI_PROVIDER") ?? "openai";
+        
+        return provider.ToLower() switch
+        {
+            "openai" => await CallOpenAiAsync(prompt),
+            "anthropic" => await CallAnthropicAsync(prompt),
+            _ => throw new InvalidOperationException($"Unsupported AI provider: {provider}")
+        };
+    }
+
+    private static async Task<string> CallOpenAiAsync(string prompt)
+    {
+        var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY")
+            ?? throw new InvalidOperationException("OPENAI_API_KEY not set");
+
+        using var http = new HttpClient();
+        http.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+        http.DefaultRequestHeaders.Add("Accept", "application/json");
+
+        var model = Environment.GetEnvironmentVariable("OPENAI_MODEL") ?? "gpt-4-turbo-preview";
+        
+        var payload = new
+        {
+            model = model,
+            temperature = 0,
+            messages = new object[]
+            {
+                new { role = "system", content = "You are a senior staff engineer performing strict code reviews. Return only valid JSON." },
+                new { role = "user", content = prompt }
+            }
+        };
+        
+        Console.Error.WriteLine($"Using OpenAI model: {model}, prompt size: {prompt.Length} chars");
+
+        var res = await http.PostAsync(
+            "https://api.openai.com/v1/chat/completions",
+            new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json")
+        );
+        
+        if (!res.IsSuccessStatusCode)
+        {
+            var err = await res.Content.ReadAsStringAsync();
+            Console.Error.WriteLine($"OpenAI API Error: {err}");
+            throw new InvalidOperationException($"OpenAI API error ({(int)res.StatusCode}): {err}");
+        }
+
+        using var stream = await res.Content.ReadAsStreamAsync();
+        using var doc = await JsonDocument.ParseAsync(stream);
+        var content = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+        return content ?? "{\"summary\":\"No content\",\"findings\":[]}";
+    }
+
+    private static async Task<string> CallAnthropicAsync(string prompt)
     {
         var apiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")
             ?? throw new InvalidOperationException("ANTHROPIC_API_KEY not set");
@@ -117,9 +171,7 @@ static class Claude
         http.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
         http.DefaultRequestHeaders.Add("Accept", "application/json");
 
-        // Model version can be overridden via environment variable
-        var model = Environment.GetEnvironmentVariable("ANTHROPIC_MODEL") 
-            ?? "claude-3-5-sonnet-20241022";
+        var model = Environment.GetEnvironmentVariable("ANTHROPIC_MODEL") ?? "claude-3-5-sonnet-20240620";
         
         var payload = new
         {
@@ -136,18 +188,17 @@ static class Claude
             }
         };
         
-        Console.Error.WriteLine($"Using model: {model}, prompt size: {prompt.Length} chars");
+        Console.Error.WriteLine($"Using Anthropic model: {model}, prompt size: {prompt.Length} chars");
 
         var res = await http.PostAsync(
             "https://api.anthropic.com/v1/messages",
-            new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json")
+            new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json")
         );
+        
         if (!res.IsSuccessStatusCode)
         {
             var err = await res.Content.ReadAsStringAsync();
-            Console.Error.WriteLine($"API Error Response: {err}");
-            Console.Error.WriteLine($"Request model: {model}");
-            Console.Error.WriteLine($"Prompt size: {prompt.Length} chars");
+            Console.Error.WriteLine($"Anthropic API Error: {err}");
             throw new InvalidOperationException($"Anthropic API error ({(int)res.StatusCode}): {err}");
         }
 
