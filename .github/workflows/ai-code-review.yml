@@ -35,7 +35,7 @@ jobs:
         env:
           AI_PROVIDER: "openai"
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL: "gpt-4-turbo-preview"
+          OPENAI_MODEL: "gpt-4o-mini"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REVIEW_MAX_PATCH_BYTES: 350000
           REVIEW_INCLUDE_PATTERNS: "**/*.cs,**/*.ts,**/*.js,**/*.py,**/*.java,**/*.go,**/*.rb,**/*.rs,**/*.cpp,**/*.h,**/*.csproj,**/*.sln,**/*.yml,**/*.yaml"
