@@ -89,12 +89,17 @@ static class PromptLibrary
     {
       "summary": string,
       "findings": [
-        { "file": string, "line": number, "severity": "Info|Low|Medium|High",
+        { "file": string, "line": number, "severity": "Info" | "Low" | "Medium" | "High",
           "title": string, "explanation": string, "suggested_fix": string }
       ]
     }
     Guidelines:
+    - Severity levels (use exact case): "Info", "Low", "Medium", "High"
     - Focus on correctness, security, performance, resource leaks, concurrency, API breaking, style-invariants.
+    - Use "High" for security issues, data loss, breaking changes
+    - Use "Medium" for performance issues, code smells
+    - Use "Low" for style issues, minor improvements
+    - Use "Info" for suggestions
     - If line cannot be determined, set line=1 and explain.
     - Keep suggestions minimal and actionable.
 

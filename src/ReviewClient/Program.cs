@@ -153,9 +153,7 @@ static PullRequestReviewEvent DetermineReviewEvent(ReviewResponse review)
 
 static bool HasHighSeverityIssues(ReviewResponse review)
 {
-    return review.Findings.Any(f => 
-        f.Severity.Equals("High", StringComparison.OrdinalIgnoreCase) ||
-        f.Severity.Equals("Critical", StringComparison.OrdinalIgnoreCase));
+    return review.Findings.Any(f => f.Severity == ReviewSchemas.Severity.High);
 }
 
 static string BuildMarkdown(ReviewResponse r)
@@ -168,16 +166,16 @@ static string BuildMarkdown(ReviewResponse r)
         .ToDictionary(g => g.Key, g => g.Count());
     
     md += "**Issue Summary:**\n";
-    foreach (var severity in new[] { "Critical", "High", "Medium", "Low", "Info" })
+    foreach (var severity in new[] { ReviewSchemas.Severity.High, ReviewSchemas.Severity.Medium, ReviewSchemas.Severity.Low, ReviewSchemas.Severity.Info })
     {
         if (counts.TryGetValue(severity, out var count))
         {
             var emoji = severity switch
             {
-                "Critical" => "🔴",
-                "High" => "🟠",
-                "Medium" => "🟡",
-                "Low" => "🔵",
+                ReviewSchemas.Severity.High => "🔴",
+                ReviewSchemas.Severity.Medium => "🟡",
+                ReviewSchemas.Severity.Low => "🔵",
+                ReviewSchemas.Severity.Info => "ℹ️",
                 _ => "ℹ️"
             };
             md += $"- {emoji} {severity}: {count}\n";
@@ -189,10 +187,10 @@ static string BuildMarkdown(ReviewResponse r)
     {
         var emoji = f.Severity switch
         {
-            "Critical" => "🔴",
-            "High" => "🟠",
-            "Medium" => "🟡",
-            "Low" => "🔵",
+            ReviewSchemas.Severity.High => "🔴",
+            ReviewSchemas.Severity.Medium => "🟡",
+            ReviewSchemas.Severity.Low => "🔵",
+            ReviewSchemas.Severity.Info => "ℹ️",
             _ => "ℹ️"
         };
         md += $"| {emoji} {f.Severity} | `{f.File}:{f.Line}` | {Escape(f.Title)} | {Escape(f.SuggestedFix)} |\n";
