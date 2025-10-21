@@ -106,13 +106,24 @@ root.SetHandler(async (patchPath, owner, repo, prNumber) =>
         var body = BuildMarkdown(review);
         Console.WriteLine($"Posting review to PR #{prNumber} on {owner}/{repo}");
         
+        // Determine review event based on severity
+        var reviewEvent = DetermineReviewEvent(review);
+        var shouldFailPipeline = Environment.GetEnvironmentVariable("REVIEW_FAIL_ON_HIGH_SEVERITY") == "true";
+        
         await gh.PullRequest.Review.Create(owner, repo, prNumber, new PullRequestReviewCreate
         {
             Body = body,
-            Event = PullRequestReviewEvent.Comment
+            Event = reviewEvent
         });
 
-        Console.WriteLine("Review posted successfully!");
+        Console.WriteLine($"Review posted successfully! Event: {reviewEvent}");
+        
+        // Optionally fail pipeline if high severity issues found
+        if (shouldFailPipeline && HasHighSeverityIssues(review))
+        {
+            Console.WriteLine("❌ High severity issues found. Failing pipeline.");
+            Environment.Exit(1);
+        }
     }
     catch (Exception ex)
     {
@@ -124,15 +135,67 @@ root.SetHandler(async (patchPath, owner, repo, prNumber) =>
 
 return await root.InvokeAsync(args);
 
+static PullRequestReviewEvent DetermineReviewEvent(ReviewResponse review)
+{
+    // Get behavior from environment variable
+    var behavior = Environment.GetEnvironmentVariable("REVIEW_BEHAVIOR") ?? "comment";
+    
+    return behavior.ToLower() switch
+    {
+        "approve" => PullRequestReviewEvent.Approve,
+        "request_changes" => HasHighSeverityIssues(review) 
+            ? PullRequestReviewEvent.RequestChanges 
+            : PullRequestReviewEvent.Comment,
+        "comment" => PullRequestReviewEvent.Comment,
+        _ => PullRequestReviewEvent.Comment
+    };
+}
+
+static bool HasHighSeverityIssues(ReviewResponse review)
+{
+    return review.Findings.Any(f => 
+        f.Severity.Equals("High", StringComparison.OrdinalIgnoreCase) ||
+        f.Severity.Equals("Critical", StringComparison.OrdinalIgnoreCase));
+}
+
 static string BuildMarkdown(ReviewResponse r)
 {
     var md = $"### 🤖 AI Code Review Summary\n\n{r.Summary}\n\n";
-    if (r.Findings.Count == 0) return md + "No issues found.";
+    if (r.Findings.Count == 0) return md + "✅ No issues found.";
+
+    // Count by severity
+    var counts = r.Findings.GroupBy(f => f.Severity)
+        .ToDictionary(g => g.Key, g => g.Count());
+    
+    md += "**Issue Summary:**\n";
+    foreach (var severity in new[] { "Critical", "High", "Medium", "Low", "Info" })
+    {
+        if (counts.TryGetValue(severity, out var count))
+        {
+            var emoji = severity switch
+            {
+                "Critical" => "🔴",
+                "High" => "🟠",
+                "Medium" => "🟡",
+                "Low" => "🔵",
+                _ => "ℹ️"
+            };
+            md += $"- {emoji} {severity}: {count}\n";
+        }
+    }
 
     md += "\n| Severity | File:Line | Title | Suggestion |\n|---|---|---|---|\n";
     foreach (var f in r.Findings)
     {
-        md += $"| {f.Severity} | `{f.File}:{f.Line}` | {Escape(f.Title)} | {Escape(f.SuggestedFix)} |\n";
+        var emoji = f.Severity switch
+        {
+            "Critical" => "🔴",
+            "High" => "🟠",
+            "Medium" => "🟡",
+            "Low" => "🔵",
+            _ => "ℹ️"
+        };
+        md += $"| {emoji} {f.Severity} | `{f.File}:{f.Line}` | {Escape(f.Title)} | {Escape(f.SuggestedFix)} |\n";
     }
     md += "\n> Detailed explanations are in the tool output.\n";
     return md;
