@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace ReviewSchemas;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum Severity { Info, Low, Medium, High }
 
 public sealed record Finding(
