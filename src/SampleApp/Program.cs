@@ -99,5 +99,32 @@ namespace SampleApp
                 new System.IO.StringReader(xmlContent), settings);
             // XXE vulnerability!
         }
+        
+        // CRITICAL: Insecure Deserialization
+        public static object DeserializeData(string data)
+        {
+            // CRITICAL: BinaryFormatter is dangerous - allows arbitrary code execution!
+            var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+            using var stream = new System.IO.MemoryStream(Convert.FromBase64String(data));
+            return formatter.Deserialize(stream); // RCE vulnerability!
+        }
+        
+        // CRITICAL: LDAP Injection
+        public static string SearchUser(string username)
+        {
+            // CRITICAL: LDAP injection - user input directly in filter!
+            string ldapFilter = $"(&(objectClass=user)(cn={username}))";
+            // Attacker could inject: *)(objectClass=*))(&(cn=*
+            return ldapFilter;
+        }
+        
+        // CRITICAL: Server-Side Request Forgery (SSRF)
+        public static async System.Threading.Tasks.Task<string> FetchUrl(string url)
+        {
+            // CRITICAL: SSRF - no URL validation, can access internal resources!
+            using var client = new System.Net.Http.HttpClient();
+            // Attacker could use: http://localhost:6379/ or http://169.254.169.254/
+            return await client.GetStringAsync(url);
+        }
     }
 }
