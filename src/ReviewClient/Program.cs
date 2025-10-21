@@ -31,6 +31,20 @@ root.SetHandler(async (patchPath, owner, repo, prNumber) =>
             Console.WriteLine("Warning: Patch file is empty. No changes to review.");
             Environment.Exit(0);
         }
+        
+        // Check patch size limit
+        var maxBytes = int.TryParse(Environment.GetEnvironmentVariable("REVIEW_MAX_PATCH_BYTES"), out var limit) 
+            ? limit 
+            : 350000;
+        
+        var patchBytes = System.Text.Encoding.UTF8.GetByteCount(patch);
+        if (patchBytes > maxBytes)
+        {
+            Console.WriteLine($"Warning: Patch size ({patchBytes} bytes) exceeds limit ({maxBytes} bytes). Truncating...");
+            // Truncate patch to fit within limit
+            var truncated = patch.Substring(0, Math.Min(patch.Length, maxBytes / 4)); // Conservative estimate
+            patch = truncated + "\n\n... [Patch truncated due to size limit]";
+        }
 
         var req = System.Text.Json.JsonSerializer.Serialize(new { method = "review_diff", @params = new { patch } });
         

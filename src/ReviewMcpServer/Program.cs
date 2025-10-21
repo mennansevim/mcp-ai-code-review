@@ -117,9 +117,13 @@ static class Claude
         http.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
         http.DefaultRequestHeaders.Add("Accept", "application/json");
 
+        // Model version can be overridden via environment variable
+        var model = Environment.GetEnvironmentVariable("ANTHROPIC_MODEL") 
+            ?? "claude-3-5-sonnet-20241022";
+        
         var payload = new
         {
-            model = "claude-3-5-sonnet-20241022",
+            model = model,
             max_tokens = 4096,
             temperature = 0,
             messages = new object[]
@@ -131,6 +135,8 @@ static class Claude
                 }
             }
         };
+        
+        Console.Error.WriteLine($"Using model: {model}, prompt size: {prompt.Length} chars");
 
         var res = await http.PostAsync(
             "https://api.anthropic.com/v1/messages",
@@ -139,6 +145,9 @@ static class Claude
         if (!res.IsSuccessStatusCode)
         {
             var err = await res.Content.ReadAsStringAsync();
+            Console.Error.WriteLine($"API Error Response: {err}");
+            Console.Error.WriteLine($"Request model: {model}");
+            Console.Error.WriteLine($"Prompt size: {prompt.Length} chars");
             throw new InvalidOperationException($"Anthropic API error ({(int)res.StatusCode}): {err}");
         }
 

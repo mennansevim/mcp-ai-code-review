@@ -22,7 +22,7 @@ CLIENT=./src/ReviewClient/bin/Release/net8.0/ReviewClient
 # Start server (stdio) in background
 $SERVER &
 SERVER_PID=$!
-trap 'kill ${SERVER_PID} || true' EXIT
+trap 'kill ${SERVER_PID} 2>/dev/null || true' EXIT
 
 # Invoke client (will spawn a one-shot call as well)
 $CLIENT           --patch-file "$PATCH_FILE"           --owner "${GITHUB_REPOSITORY%/*}"           --repo  "${GITHUB_REPOSITORY#*/}"           --pr    "$(jq -r '.pull_request.number // 0' "$GITHUB_EVENT_PATH")" || true
