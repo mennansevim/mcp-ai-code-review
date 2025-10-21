@@ -52,34 +52,19 @@ sealed class ReviewServer
         var prompt = PromptLibrary.BuildForPatch(patch);
         var text = await AiClient.CallAsync(prompt);
         
-        // Log raw response for debugging
-        Console.Error.WriteLine($"Raw AI response (first 500 chars): {text.Substring(0, Math.Min(500, text.Length))}");
-        
-        // AI might return JSON in markdown code blocks, clean it up
+        // Clean up markdown code blocks
         text = text.Trim();
-        
-        // Remove ```json or ``` prefix
         if (text.StartsWith("```json"))
-        {
             text = text[7..];
-        }
         else if (text.StartsWith("```"))
         {
             var firstNewline = text.IndexOf('\n');
             if (firstNewline > 0)
                 text = text[(firstNewline + 1)..];
         }
-        
-        // Remove ``` suffix
         if (text.EndsWith("```"))
-        {
             text = text[..^3];
-        }
-        
         text = text.Trim();
-        
-        // Log cleaned JSON for debugging
-        Console.Error.WriteLine($"Cleaned JSON (first 500 chars): {text.Substring(0, Math.Min(500, text.Length))}");
         
         try
         {
@@ -90,14 +75,13 @@ sealed class ReviewServer
             };
             
             return JsonSerializer.Deserialize<ReviewResponse>(text, options) ?? new ReviewResponse(
-                Summary: "Model returned no valid JSON. Check logs.",
+                Summary: "AI returned empty response",
                 Findings: new()
             );
         }
         catch (JsonException ex)
         {
-            Console.Error.WriteLine($"JSON Parse Error: {ex.Message}");
-            Console.Error.WriteLine($"Problematic JSON: {text}");
+            Console.Error.WriteLine($"❌ JSON Parse Error: {ex.Message}");
             throw new InvalidOperationException($"Failed to parse AI response: {ex.Message}", ex);
         }
     }
@@ -207,7 +191,7 @@ static class AiClient
             }
         };
         
-        Console.Error.WriteLine($"Using OpenAI model: {model}, prompt size: {prompt.Length} chars");
+        Console.Error.WriteLine($"🤖 Using {model}");
 
         var res = await http.PostAsync(
             "https://api.openai.com/v1/chat/completions",
@@ -249,7 +233,7 @@ static class AiClient
             }
         };
         
-        Console.Error.WriteLine($"Using Groq model: {model}, prompt size: {prompt.Length} chars");
+        Console.Error.WriteLine($"🤖 Using {model}");
 
         var res = await http.PostAsync(
             "https://api.groq.com/openai/v1/chat/completions",
@@ -296,7 +280,7 @@ static class AiClient
             }
         };
         
-        Console.Error.WriteLine($"Using Anthropic model: {model}, prompt size: {prompt.Length} chars");
+        Console.Error.WriteLine($"🤖 Using {model}");
 
         var res = await http.PostAsync(
             "https://api.anthropic.com/v1/messages",
