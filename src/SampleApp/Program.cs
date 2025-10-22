@@ -196,5 +196,45 @@ namespace SampleApp
             
             // Should use: Interlocked.Increment(ref _userCount)
         }
+        
+        // CRITICAL: Arbitrary File Delete
+        public static void DeleteUserFile(string userId, string fileName)
+        {
+            // CRITICAL: No validation - can delete ANY file on system!
+            string filePath = $"/var/app/uploads/{userId}/{fileName}";
+            
+            // Attacker could use: userId="../..", fileName="../../etc/passwd"
+            // Results in: /var/app/uploads/../../etc/passwd deletion!
+            System.IO.File.Delete(filePath);
+            
+            // Should validate userId and fileName, use Path.GetFullPath() checks
+        }
+        
+        // CRITICAL: Reflected XSS - Direct HTML output
+        public static string GenerateWelcomeMessage(string userName)
+        {
+            // CRITICAL: User input directly in HTML without encoding!
+            string html = $"<h1>Welcome, {userName}!</h1>";
+            
+            // Attacker could inject: <script>alert(document.cookie)</script>
+            // Results in XSS attack, cookie theft, session hijacking!
+            return html;
+            
+            // Should use: System.Web.HttpUtility.HtmlEncode(userName)
+        }
+        
+        // CRITICAL: NoSQL Injection (MongoDB)
+        public static string BuildMongoQuery(string username, string role)
+        {
+            // CRITICAL: NoSQL injection - direct string interpolation!
+            string query = $"{{ 'username': '{username}', 'role': '{role}' }}";
+            
+            // Attacker could inject: username = "admin', $or: [ {}, {'a':'a"
+            // Results in: {'username': 'admin', $or: [ {}, {'a':'a', 'role': 'user'}
+            // Bypasses authentication logic!
+            return query;
+            
+            // Should use parameterized queries or MongoDB driver properly
+        }
     }
 }
