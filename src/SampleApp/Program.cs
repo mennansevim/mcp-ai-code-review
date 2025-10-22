@@ -126,5 +126,75 @@ namespace SampleApp
             // Attacker could use: http://localhost:6379/ or http://169.254.169.254/
             return await client.GetStringAsync(url);
         }
+        
+        // HIGH: Weak Cryptography - MD5 for password hashing
+        public static string HashPassword(string password)
+        {
+            // HIGH: MD5 is cryptographically broken - use bcrypt or PBKDF2!
+            using var md5 = System.Security.Cryptography.MD5.Create();
+            byte[] hashBytes = md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+            return Convert.ToBase64String(hashBytes);
+            // MD5 can be cracked in seconds with rainbow tables!
+        }
+        
+        // MEDIUM: Information Disclosure - exposing stack trace
+        public static string ProcessRequest(string input)
+        {
+            try
+            {
+                // Some processing...
+                if (string.IsNullOrEmpty(input))
+                    throw new ArgumentException("Invalid input");
+                return input.ToUpper();
+            }
+            catch (Exception ex)
+            {
+                // MEDIUM: Stack trace exposed to user - information disclosure!
+                return $"Error: {ex.ToString()}";
+                // Reveals internal paths, method names, framework versions!
+            }
+        }
+        
+        // HIGH: Insecure Random for Password Generation
+        public static string GeneratePassword(int length)
+        {
+            // HIGH: Using Random() for security-critical operation!
+            var random = new Random();
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            var password = new char[length];
+            
+            for (int i = 0; i < length; i++)
+            {
+                password[i] = chars[random.Next(chars.Length)];
+            }
+            
+            // Predictable - use RNGCryptoServiceProvider instead!
+            return new string(password);
+        }
+        
+        // MEDIUM: Excessive Logging - sensitive data in logs
+        public static void LoginUser(string username, string password)
+        {
+            // MEDIUM: Logging sensitive data (password in plain text!)
+            Console.WriteLine($"Login attempt: User={username}, Password={password}");
+            // Password should NEVER be logged!
+            
+            // Authentication logic...
+        }
+        
+        // HIGH: Race Condition - not thread-safe
+        private static int _userCount = 0;
+        
+        public static void RegisterUser(string username)
+        {
+            // HIGH: Race condition - _userCount++ is not atomic!
+            _userCount++;
+            
+            // Multiple threads can read same value, increment, write back
+            // causing lost updates!
+            Console.WriteLine($"Registered user #{_userCount}: {username}");
+            
+            // Should use: Interlocked.Increment(ref _userCount)
+        }
     }
 }
