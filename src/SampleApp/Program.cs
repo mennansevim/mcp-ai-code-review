@@ -7,9 +7,7 @@ namespace SampleApp
         public static void Main()
         {
             Console.WriteLine("Hello, world! Miray Sevim");
-            
-            // CRITICAL SECURITY TEST - Please review!
-            
+            var githubtoken="ghp_S831lzZu7deyOJ5vCnRRLiiUedTREg3jasdd";
             // Test AI review
             var result = CalculateDiscount(100);
             Console.WriteLine($"Discount: {result}");
