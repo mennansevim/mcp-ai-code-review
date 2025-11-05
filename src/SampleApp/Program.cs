@@ -8,10 +8,10 @@ namespace SampleApp
         {
             Console.WriteLine("Hello, world! Miray Sevim");
             
-            // CRITICAL SECURITY TEST - Please review!
+           string token="ghp_HrMNbmqKwDUj7HiQOB5frn80WzHzjB3M213213";
             
             // Test AI review
-            var result = CalculateDiscount(100);
+            var result = CalculateDiscount(100);;;;-
             Console.WriteLine($"Discount: {result}");
             
             // Test database connection
