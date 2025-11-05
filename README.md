@@ -14,7 +14,6 @@
 - ❌ Claude Desktop entegrasyonu yok
 
 **Gerçek MCP implementasyonu için:** `MCP_IMPLEMENTATION_PLAN.md` dosyasına bakın.
-
 ---
 
 ## 🚀 Özellikler
