@@ -9,11 +9,9 @@ namespace SampleApp
             Console.WriteLine("Hello, world! Miray Sevim");
             
             // CRITICAL SECURITY TEST - Please review!
-            
-            // Test AI review
-            var result = CalculateDiscount(100);
+            cCalculateDiscount(100);
             Console.WriteLine($"Discount: {result}");
-            
+            a
             // Test database connection
             var conn = GetDatabaseConnection();
             Console.WriteLine($"Connected: {conn != null}");
