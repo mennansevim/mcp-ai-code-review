@@ -14,7 +14,7 @@ sealed class ReviewServer
         using var reader = new StreamReader(stdin);
         using var writer = new StreamWriter(stdout) { AutoFlush = true };
 
-        string? line;
+        string? line;sdfsdf
         var oneShot = Environment.GetEnvironmentVariable("REVIEW_SERVER_ONE_SHOT") == "1";
         while ((line = await reader.ReadLineAsync()) is not null)
         {
