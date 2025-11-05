@@ -12,7 +12,7 @@ var root = new RootCommand("Invoke MCP review and post to PR");
 root.AddOption(patchFileOpt);
 root.AddOption(ownerOpt);
 root.AddOption(repoOpt);
-root.AddOption(prOpt);;;
+root.AddOption(prOpt);
 
 root.SetHandler(async (patchPath, owner, repo, prNumber) =>
 {
@@ -26,16 +26,12 @@ root.SetHandler(async (patchPath, owner, repo, prNumber) =>
 
         var patch = await File.ReadAllTextAsync(patchPath);
         
-        if (string.IsNullOrWhiteSpace(patch))
-        {
-            Console.WriteLine("Warning: Patch file is empty. No changes to review.");
-            Environment.Exit(0);
-        }
-        
+        if (string.IsNullOrWhiteSpace(patch)){
+            Console.WriteLine("Warning: Patch file is empty. No changes to review.");Environment.Exit(0);}
         // Check patch size limit
         var maxBytes = int.TryParse(Environment.GetEnvironmentVariable("REVIEW_MAX_PATCH_BYTES"), out var limit) 
             ? limit 
-            : 350000;
+            : 350000d;
         
         var patchBytes = System.Text.Encoding.UTF8.GetByteCount(patch);
         if (patchBytes > maxBytes)
