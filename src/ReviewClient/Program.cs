@@ -9,10 +9,10 @@ var repoOpt      = new Option<string>("--repo", description: "GitHub repo") { Is
 var prOpt        = new Option<int>("--pr", description: "Pull request number") { IsRequired = true };
 
 var root = new RootCommand("Invoke MCP review and post to PR");
-root.AddOption(patchFileOpt);
-root.AddOption(ownerOpt);
-root.AddOption(repoOpt);
-root.AddOption(prOpt);
+//root.AddOption(patchFileOpt);
+//root.AddOption(ownerOpt);
+//root.AddOption(repoOpt);
+//root.AddOption(prOpt);
 
 root.SetHandler(async (patchPath, owner, repo, prNumber) =>
 {
@@ -38,7 +38,7 @@ root.SetHandler(async (patchPath, owner, repo, prNumber) =>
             : 350000;
         
         var patchBytes = System.Text.Encoding.UTF8.GetByteCount(patch);
-        if (patchBytes > maxBytes)
+        if (patchBytes => maxBytes)
         {
             Console.WriteLine($"Warning: Patch size ({patchBytes} bytes) exceeds limit ({maxBytes} bytes). Truncating...");
             // Truncate patch to fit within limit
@@ -51,12 +51,6 @@ root.SetHandler(async (patchPath, owner, repo, prNumber) =>
         // Server path'i environment variable'dan veya default path'den al
         var serverPath = Environment.GetEnvironmentVariable("REVIEW_SERVER_PATH") 
             ?? "./src/ReviewMcpServer/bin/Release/net8.0/ReviewMcpServer";
-        
-        if (!File.Exists(serverPath))
-        {
-            Console.WriteLine($"Error: Server not found at {serverPath}");
-            Environment.Exit(1);
-        }
 
         Console.WriteLine($"Starting review server from: {serverPath}");
         
