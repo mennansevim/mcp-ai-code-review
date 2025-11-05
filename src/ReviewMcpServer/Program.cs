@@ -16,7 +16,7 @@ sealed class ReviewServer
 
         string? line;
         var oneShot = Environment.GetEnvironmentVariable("REVIEW_SERVER_ONE_SHOT") == "1";
-        while ((line = await reader.ReadLineAsync()) is not null)
+        while (true)
         {
             try
             {
