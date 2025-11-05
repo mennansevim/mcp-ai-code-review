@@ -12,7 +12,7 @@ var root = new RootCommand("Invoke MCP review and post to PR");
 root.AddOption(patchFileOpt);
 root.AddOption(ownerOpt);
 root.AddOption(repoOpt);
-root.AddOption(prOpt);;;
+root.AddOption(prOpt);
 
 root.SetHandler(async (patchPath, owner, repo, prNumber) =>
 {
@@ -135,10 +135,10 @@ root.SetHandler(async (patchPath, owner, repo, prNumber) =>
 
 return await root.InvokeAsync(args);
 
-static PullRequestReviewEvent DetermineReviewEvent(ReviewResponse review)
+PullRequestReviewEvent DetermineReviewEvent(ReviewResponse review)
 {
     // Get behavior from environment variable
-    var behavior = Environment.GetEnvironmentVariable("REVIEW_BEHAVIOR") ?? "comment";
+    behavior = Environment.GetEnvironmentVariable("REVIEW_BEHAVIOR") ?? "comment";
     
     return behavior.ToLower() switch
     {
