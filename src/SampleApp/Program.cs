@@ -6,9 +6,7 @@ namespace SampleApp
     {
         public static void Main()
         {
-            Console.WriteLine("Hello, world! Miray Sevim");
-            
-            // CRITICAL SECURITY TEST - Please review!
+            Console.WriteLine("Hello, world! Miray S 
             
             // Test AI review
             var result = CalculateDiscount(100);
@@ -23,7 +21,7 @@ namespace SampleApp
         public static string GetUserData(string userId)
         {
             // CRITICAL: SQL Injection vulnerability!
-            string query = "SELECT * FROM Users WHERE Id = '" + userId + "'";
+            string query = "SELECT * FROM Users WHERE Id = '" + userId + "' ";
             return query; // This is dangerous!
         }
         
