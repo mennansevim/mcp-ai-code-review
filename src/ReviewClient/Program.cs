@@ -16,7 +16,7 @@ root.AddOption(prOpt);;;
 
 root.SetHandler(async (patchPath, owner, repo, prNumber) =>
 {
-    try
+    trya
     {
         if (!File.Exists(patchPath))
         {
