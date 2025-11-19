@@ -1,8 +1,22 @@
 name: AI Code Review
 
 on:
+  # PR açıldığında, güncelleme geldiğinde
   pull_request:
     types: [opened, synchronize, reopened]
+    branches:
+      - master
+      - main
+      - preprod
+      - production
+  
+  # Master/main'e merge olduğunda (push event)
+  push:
+    branches:
+      - master
+      - main
+      - preprod
+      - production
 
 jobs:
   ai-review:
@@ -15,6 +29,14 @@ jobs:
         run: |
           curl -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
-            -H "x-github-event: pull_request" \
+            -H "x-github-event: ${{ github.event_name }}" \
             -H "x-github-delivery: ${{ github.run_id }}" \
+            -H "User-Agent: GitHub-Actions" \
             --data @$GITHUB_EVENT_PATH
+      
+      - name: Check Webhook Response
+        if: always()
+        run: |
+          echo "✅ Webhook triggered successfully"
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
