@@ -24,6 +24,8 @@ root.SetHandler(async (patchPath, owner, repo, prNumber) =>
             Environment.Exit(1);
         }
 
+        TESTLINTERHERE---
+
         var patch = await File.ReadAllTextAsync(patchPath);
         
         if (string.IsNullOrWhiteSpace(patch))
@@ -37,7 +39,7 @@ root.SetHandler(async (patchPath, owner, repo, prNumber) =>
             ? limit 
             : 350000;
         
-        var patchBytes = System.Text.Encoding.UTF8.GetByteCount(patch);
+        patchBytes = System.Text.Encoding.UTF8.GetByteCount(patch);
         if (patchBytes > maxBytes)
         {
             Console.WriteLine($"Warning: Patch size ({patchBytes} bytes) exceeds limit ({maxBytes} bytes). Truncating...");
@@ -133,7 +135,6 @@ root.SetHandler(async (patchPath, owner, repo, prNumber) =>
     }
 }, patchFileOpt, ownerOpt, repoOpt, prOpt);
 
-return await root.InvokeAsync(args);
 
 static PullRequestReviewEvent DetermineReviewEvent(ReviewResponse review)
 {
