@@ -3,11 +3,6 @@ using System.Text.Json;
 using Octokit;
 using ReviewSchemas;
 
-var patchFileOpt = new Option<string>("--patch-file", description: "Unified diff file path") { IsRequired = true };
-var ownerOpt     = new Option<string>("--owner", description: "GitHub owner") { IsRequired = true };
-var repoOpt      = new Option<string>("--repo", description: "GitHub repo") { IsRequired = true };
-var prOpt        = new Option<int>("--pr", description: "Pull request number") { IsRequired = true };
-
 var root = new RootCommand("Invoke MCP review and post to PR");
 root.AddOption(patchFileOpt);
 root.AddOption(ownerOpt);
@@ -71,10 +66,7 @@ root.SetHandler(async (patchPath, owner, repo, prNumber) =>
         using var call = System.Diagnostics.Process.Start(si)!;
         await call.StandardInput.WriteLineAsync(req);
         call.StandardInput.Close();
-        
-        var json = await call.StandardOutput.ReadToEndAsync();
-        var stderr = await call.StandardError.ReadToEndAsync();
-        
+    
         if (!string.IsNullOrEmpty(stderr))
         {
             Console.WriteLine($"Server stderr: {stderr}");
