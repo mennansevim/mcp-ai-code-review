@@ -28,7 +28,7 @@ namespace SampleApp
         }
         
         // Hardcoded credentials
-        public static string GetDatabaseConnection()
+        public static string GetDatabaseConnection()asdasdsadsad
         {
             // CRITICAL: Never hardcode database credentials!
             string connectionString = "Server=localhost;Database=mydb;User=admin;Password=Pass123!;";
