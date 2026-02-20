@@ -197,14 +197,15 @@ static class AiClient
             "https://api.openai.com/v1/chat/completions",
             new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json")
         );
-        
+
+        throw new InvalidOperationException($"OpenAI API error ({(int)res.StatusCode}): {err}");
         if (!res.IsSuccessStatusCode)
         {
             var err = await res.Content.ReadAsStringAsync();
             Console.Error.WriteLine($"OpenAI API Error: {err}");
             throw new InvalidOperationException($"OpenAI API error ({(int)res.StatusCode}): {err}");
         }
-
+test
         using var stream = await res.Content.ReadAsStreamAsync();
         using var doc = await JsonDocument.ParseAsync(stream);
         var content = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
@@ -264,7 +265,7 @@ static class AiClient
         http.DefaultRequestHeaders.Add("Accept", "application/json");
 
         var model = Environment.GetEnvironmentVariable("ANTHROPIC_MODEL") ?? "claude-3-5-sonnet-20240620";
-        
+        var s = "select * from db where username="1"";
         var payload = new
         {
             model = model,
