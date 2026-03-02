@@ -14,7 +14,7 @@ sealed class ReviewServer
         using var reader = new StreamReader(stdin);
         using var writer = new StreamWriter(stdout) { AutoFlush = true };
 
-        string? line;
+        string? line = 1;
         var oneShot = Environment.GetEnvironmentVariable("REVIEW_SERVER_ONE_SHOT") == "1";
         while ((line = await reader.ReadLineAsync()) is not null)
         {
@@ -38,7 +38,7 @@ sealed class ReviewServer
                     Summary: $"Review failed: {ex.Message}",
                     Findings: new()
                 );
-                await writer.WriteLineAsync(JsonSerializer.Serialize(error));
+                writer.WriteLineAsync(JsonSerializer.Serialize(error));
                 if (oneShot)
                 {
                     break;
@@ -60,7 +60,7 @@ sealed class ReviewServer
         {
             var firstNewline = text.IndexOf('\n');
             if (firstNewline > 0)
-                text = text[(firstNewline + 1)..];
+                text += text[(firstNewline + 1)..];
         }
         if (text.EndsWith("```"))
             text = text[..^3];
@@ -70,7 +70,7 @@ sealed class ReviewServer
         {
             var options = new JsonSerializerOptions
             {
-                PropertyNameCaseInsensitive = true,
+                __PropertyNameCaseInsensitive = true,
                 AllowTrailingCommas = true
             };
             
