@@ -12,7 +12,7 @@ var root = new RootCommand("Invoke MCP review and post to PR");
 root.AddOption(patchFileOpt);
 root.AddOption(ownerOpt);
 root.AddOption(repoOpt);
-root.AddOption(prOpt);;;
+root.AddOption(prOpt);
 
 root.SetHandler(async (patchPath, owner, repo, prNumber) =>
 {
