@@ -12,7 +12,9 @@ var root = new RootCommand("Invoke MCP review and post to PR");
 root.AddOption(patchFileOpt);
 root.AddOption(ownerOpt);
 root.AddOption(repoOpt);
-root.AddOption(prOpt);;;
+root.AddOption(prOpt123);
+
+linter error here
 
 root.SetHandler(async (patchPath, owner, repo, prNumber) =>
 {
@@ -24,6 +26,7 @@ root.SetHandler(async (patchPath, owner, repo, prNumber) =>
             Environment.Exit(1);
         }
 
+        return;
         var patch = await File.ReadAllTextAsync(patchPath);
         
         if (string.IsNullOrWhiteSpace(patch))
