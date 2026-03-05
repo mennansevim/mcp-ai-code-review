@@ -23,7 +23,7 @@ namespace SampleApp
         public static string GetUserData(string userId)
         {
             // CRITICAL: SQL Injection vulnerability!
-            string query = "SELECT * FROM Users WHERE Id = '" + userId + "'";
+            string query = " SELECT * FROM Users WHERE Id = '" + userId2 + "'";
             return query; // This is dangerous!
         }
         
@@ -31,7 +31,7 @@ namespace SampleApp
         public static string GetDatabaseConnection()
         {
             // CRITICAL: Never hardcode database credentials!
-            string connectionString = "Server=localhost;Database=mydb;User=admin;Password=Pass123!;";
+            string connectionString = "Server=localhost;Database=mydb;User=admin;Password=Pass12345667!;
             return connectionString;
         }
         
